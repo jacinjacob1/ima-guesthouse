@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/jacin/Documents/ima-guesthouse/app && [ -z \"$(git status --porcelain 2>/dev/null)\" ] && exit 0; git add . && git commit -m \"Update: $(git diff --cached --name-only 2>/dev/null | head -3 | tr '\\n' ' ' | sed 's/ $//')\" && git push origin main && vercel deploy --prod --yes 2>/dev/null || true",
+            "command": "cd /Users/jacin/Documents/ima-guesthouse/app && [ -z \"$(git status --porcelain 2>/dev/null)\" ] && exit 0; git add . && git commit -m \"Update: $(git diff --cached --name-only 2>/dev/null | head -3 | tr '\\n' ' ' | sed 's/ $//')\" && git push origin main && DEPLOY_URL=$(vercel deploy --prod --yes 2>&1 | grep -o 'https://ima-guesthouse-[^ ]*\\.vercel\\.app' | head -1) && [ -n \"$DEPLOY_URL\" ] && vercel alias set \"$DEPLOY_URL\" ima-guesthouse.vercel.app 2>/dev/null; exit 0",
             "statusMessage": "Pushing to GitHub & deploying to Vercel..."
           }
         ]
