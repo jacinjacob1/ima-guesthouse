@@ -166,7 +166,13 @@ export default function Booking() {
   };
 
   const stepLabels = ['Room', 'Personal', 'Identity', 'Review', 'Payment'];
-  const today = new Date().toISOString().split('T')[0];
+  const today  = new Date().toISOString().split('T')[0];
+
+  // ── Price calculation ──
+  const nights = (form.checkIn && form.checkOut)
+    ? Math.max(0, Math.round((new Date(form.checkOut) - new Date(form.checkIn)) / 86400000))
+    : 0;
+  const total = nights * 2000;
 
   const payOptBase = (selected) => ({
     position: 'relative', cursor: 'pointer', borderRadius: 12, padding: '22px 20px',
@@ -248,6 +254,29 @@ export default function Booking() {
                         {errors.checkOut && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{errors.checkOut}</div>}
                       </div>
                     </div>
+                    {/* ── Live price summary ── */}
+                    {nights > 0 && (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #1a2e28, #2d6a5c)',
+                        borderRadius: 10, padding: '18px 22px', marginBottom: 22,
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        boxShadow: '0 4px 20px rgba(45,106,92,0.22)',
+                      }}>
+                        <div>
+                          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 5 }}>Estimated Total</div>
+                          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                            {nights} night{nights !== 1 ? 's' : ''} × ₹2,000{form.roomType ? ` · ${form.roomType}` : ''}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: '#fff', lineHeight: 1 }}>
+                            ₹{total.toLocaleString('en-IN')}
+                          </div>
+                          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>incl. all charges</div>
+                        </div>
+                      </div>
+                    )}
+
                     <SelectField label="Number of Guests" id="guests" value={form.guests} onChange={v => set('guests', v)} options={['1', '2']} placeholder="" clearErr={clearErr} />
                   </div>
                 )}
@@ -299,8 +328,23 @@ export default function Booking() {
                       </div>
                     )}
 
+                    {/* ── Total amount highlight ── */}
+                    <div style={{
+                      background: 'linear-gradient(135deg, #1a2e28, #2d6a5c)',
+                      borderRadius: 10, padding: '16px 20px', marginBottom: 22,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                      <div>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 4 }}>Total Amount</div>
+                        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>{nights} night{nights !== 1 ? 's' : ''} × ₹2,000</div>
+                      </div>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700, color: '#fff' }}>
+                        ₹{total.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+
                     {[
-                      { section: 'Room & Dates', items: [['Room', form.roomType], ['Rate', '₹2,000 / night'], ['Check-in', form.checkIn], ['Check-out', form.checkOut], ['Guests', form.guests]] },
+                      { section: 'Room & Dates', items: [['Room', form.roomType], ['Rate', '₹2,000 / night'], ['Nights', `${nights} night${nights !== 1 ? 's' : ''}`], ['Check-in', form.checkIn], ['Check-out', form.checkOut], ['Guests', form.guests]] },
                       { section: 'Guest Details', items: [['Name', form.name], ['Mobile', form.phone], ['Email', form.email || '—'], ...(form.notes ? [['Notes', form.notes]] : [])] },
                       { section: 'Identity',      items: [['ID Type', form.idType], ['ID Number', form.idNumber.replace(/./g, (c, i) => i < form.idNumber.length - 4 ? '•' : c)]] },
                     ].map(group => (
@@ -471,12 +515,21 @@ export default function Booking() {
                 Thank you, <strong>{form.name}</strong>. Your reservation request for <strong>{form.roomType}</strong> has been received. Our team will reach you on <strong>{form.phone}</strong> to confirm.
               </p>
 
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, background: '#f4f9f7', border: '1px solid rgba(45,106,92,0.18)', borderRadius: 10, padding: '14px 22px', marginBottom: 8 }}>
-                <span style={{ fontSize: 20 }}>{paymentMethod === 'upi' ? '📱' : '🏨'}</span>
-                <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: '#2d6a5c', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Payment</div>
-                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a2e28' }}>
-                    {paymentMethod === 'upi' ? `UPI — Txn ID: ${form.transactionId}` : 'Pay at Reception on arrival'}
+              <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 10, marginBottom: 8, width: '100%', maxWidth: 400 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f4f9f7', border: '1px solid rgba(45,106,92,0.18)', borderRadius: 10, padding: '14px 20px' }}>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: '#2d6a5c', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Total Charged</div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#4a6a62' }}>{nights} night{nights !== 1 ? 's' : ''} · {form.roomType}</div>
+                  </div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: '#1a2e28' }}>₹{total.toLocaleString('en-IN')}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f4f9f7', border: '1px solid rgba(45,106,92,0.18)', borderRadius: 10, padding: '14px 20px' }}>
+                  <span style={{ fontSize: 20 }}>{paymentMethod === 'upi' ? '📱' : '🏨'}</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, fontWeight: 700, color: '#2d6a5c', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 2 }}>Payment</div>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600, color: '#1a2e28' }}>
+                      {paymentMethod === 'upi' ? `UPI — Txn ID: ${form.transactionId}` : 'Pay at Reception on arrival'}
+                    </div>
                   </div>
                 </div>
               </div>
