@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 
 const items = [
-  { id: 1,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-1.jpg',       label: 'Deluxe Room — Interior',   sub: 'Room view · Single / Double' },
-  { id: 2,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-2.jpg',       label: 'Deluxe Room — Bed Area',   sub: 'Comfortable furnishings' },
-  { id: 3,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-3.jpg',       label: 'Deluxe Room — Work Area',  sub: 'Work desk & amenities' },
-  { id: 4,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-4.jpg',       label: 'Deluxe Room — Overview',   sub: 'Full room view' },
-  { id: 5,  category: 'Executive Room', src: '/gallery/executive/executive-1.jpg', label: 'Executive Room — Interior',sub: 'Spacious layout' },
-  { id: 6,  category: 'Executive Room', src: '/gallery/executive/executive-2.jpg', label: 'Executive Room — Bed Area',sub: 'Premium bedding' },
-  { id: 7,  category: 'Executive Room', src: '/gallery/executive/executive-3.jpg', label: 'Executive Room — Overview',sub: 'Full room view' },
-  { id: 8,  category: 'Hall',           src: '/gallery/hall/hall-1.jpg',           label: 'Conference Hall — Full View',   sub: '300 Seat Capacity' },
-  { id: 9,  category: 'Hall',           src: '/gallery/hall/hall-2.jpg',           label: 'Hall — Stage & Podium',         sub: 'Audio Visual Setup' },
-  { id: 10, category: 'Hall',           src: '/gallery/hall/hall-3.jpg',           label: 'Hall — Seating Layout',         sub: 'Flexible Arrangement' },
-  { id: 11, category: 'Hall',           src: '/gallery/hall/hall-4.jpg',           label: 'Hall — Event Setup',            sub: 'CME / Seminar Mode' },
-  { id: 12, category: 'Hall',           src: '/gallery/hall/hall-5.jpg',           label: 'Hall — Wide Angle',             sub: 'Full hall view' },
-  { id: 13, category: 'Hall',           src: '/gallery/hall/hall-6.jpg',           label: 'Hall — Entrance',               sub: 'Main entrance view' },
+  { id: 1,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-1.jpg',       label: 'Deluxe Room — Interior',      sub: 'Room view · Single / Double' },
+  { id: 2,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-2.jpg',       label: 'Deluxe Room — Bed Area',      sub: 'Comfortable furnishings' },
+  { id: 3,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-3.jpg',       label: 'Deluxe Room — Work Area',     sub: 'Work desk & amenities' },
+  { id: 4,  category: 'Deluxe Room',    src: '/gallery/deluxe/deluxe-4.jpg',       label: 'Deluxe Room — Overview',      sub: 'Full room view' },
+  { id: 5,  category: 'Executive Room', src: '/gallery/executive/executive-1.jpg', label: 'Executive Room — Interior',   sub: 'Spacious layout' },
+  { id: 6,  category: 'Executive Room', src: '/gallery/executive/executive-2.jpg', label: 'Executive Room — Bed Area',   sub: 'Premium bedding' },
+  { id: 7,  category: 'Executive Room', src: '/gallery/executive/executive-3.jpg', label: 'Executive Room — Overview',   sub: 'Full room view' },
+  { id: 8,  category: 'Hall',           src: '/gallery/hall/hall-1.jpg',           label: 'Conference Hall — Full View', sub: '300 Seat Capacity' },
+  { id: 9,  category: 'Hall',           src: '/gallery/hall/hall-2.jpg',           label: 'Hall — Stage & Podium',       sub: 'Audio Visual Setup' },
+  { id: 10, category: 'Hall',           src: '/gallery/hall/hall-3.jpg',           label: 'Hall — Seating Layout',       sub: 'Flexible Arrangement' },
+  { id: 11, category: 'Hall',           src: '/gallery/hall/hall-4.jpg',           label: 'Hall — Event Setup',          sub: 'CME / Seminar Mode' },
+  { id: 12, category: 'Hall',           src: '/gallery/hall/hall-5.jpg',           label: 'Hall — Wide Angle',           sub: 'Full hall view' },
+  { id: 13, category: 'Hall',           src: '/gallery/hall/hall-6.jpg',           label: 'Hall — Entrance',             sub: 'Main entrance view' },
 ];
 
 const filters = ['All', 'Deluxe Room', 'Executive Room', 'Hall'];
@@ -24,10 +24,82 @@ const tagColor = {
   'Hall':           { bg: '#f0ece0', color: '#7c5a2d' },
 };
 
+// Individual gallery card — kept outside Gallery so it never remounts on filter change
+function GalleryCard({ item, onClick }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+  const tag = tagColor[item.category];
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        breakInside: 'avoid', marginBottom: 18, borderRadius: 10, overflow: 'hidden',
+        cursor: 'pointer', border: '1px solid rgba(45,106,92,0.10)',
+        boxShadow: '0 1px 8px rgba(45,106,92,0.05)',
+        background: '#fff',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 36px rgba(45,106,92,0.14)';
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 8px rgba(45,106,92,0.05)';
+      }}
+    >
+      {/* Image wrapper — shows placeholder background until loaded */}
+      <div style={{ position: 'relative', background: '#e8f0ed', minHeight: 160, overflow: 'hidden' }}>
+        {!errored ? (
+          <img
+            src={item.src}
+            alt={item.label}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            onError={() => setErrored(true)}
+            style={{
+              width: '100%', display: 'block',
+              opacity: loaded ? 1 : 0,
+              transition: 'opacity 0.4s ease',
+            }}
+          />
+        ) : (
+          /* Fallback tile when image fails to load */
+          <div style={{
+            minHeight: 160, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: '#eaf2ef', padding: 20,
+          }}>
+            <span style={{ fontSize: 28 }}>🏨</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#5a8a7c', textAlign: 'center' }}>{item.label}</span>
+          </div>
+        )}
+        {/* Shimmer overlay while loading */}
+        {!loaded && !errored && (
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(90deg, #e8f0ed 25%, #d8ece4 50%, #e8f0ed 75%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.4s infinite',
+          }} />
+        )}
+      </div>
+
+      <div style={{ padding: '12px 16px' }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a2e28', marginBottom: 4 }}>{item.label}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#7a9a92' }}>{item.sub}</div>
+          <span style={{ background: tag.bg, color: tag.color, fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20 }}>{item.category}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Gallery() {
-  const [visible, setVisible]       = useState(false);
-  const [activeFilter, setFilter]   = useState('All');
-  const [lightbox, setLightbox]     = useState(null);   // { items, idx }
+  const [visible, setVisible]     = useState(false);
+  const [activeFilter, setFilter] = useState('All');
+  const [lightbox, setLightbox]   = useState(null); // { items, idx }
 
   useEffect(() => { setTimeout(() => setVisible(true), 80); }, []);
 
@@ -43,10 +115,10 @@ export default function Gallery() {
     return () => window.removeEventListener('keydown', handler);
   }, [lightbox]);
 
-  const filtered = activeFilter === 'All' ? items : items.filter(i => i.category === activeFilter);
+  const filtered = activeFilter === 'All' ? items : items.filter(item => item.category === activeFilter);
 
   const openLightbox = (item) => {
-    const idx = filtered.findIndex(i => i.id === item.id);
+    const idx = filtered.findIndex(f => f.id === item.id);
     setLightbox({ items: filtered, idx });
   };
 
@@ -83,34 +155,9 @@ export default function Gallery() {
       <section style={{ padding: '28px 40px 80px', background: '#fcfaf6' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ columns: '3 260px', columnGap: 18 }}>
-            {filtered.map((item) => {
-              const tag = tagColor[item.category];
-              return (
-                <div key={item.id} onClick={() => openLightbox(item)} style={{
-                  breakInside: 'avoid', marginBottom: 18, borderRadius: 10, overflow: 'hidden',
-                  cursor: 'pointer', border: '1px solid rgba(45,106,92,0.10)',
-                  boxShadow: '0 1px 8px rgba(45,106,92,0.05)',
-                  transition: 'all 0.25s ease', background: '#fff',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 36px rgba(45,106,92,0.14)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 8px rgba(45,106,92,0.05)'; }}
-                >
-                  <img
-                    src={item.src}
-                    alt={item.label}
-                    loading="lazy"
-                    style={{ width: '100%', display: 'block', objectFit: 'cover' }}
-                  />
-                  <div style={{ padding: '12px 16px' }}>
-                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#1a2e28', marginBottom: 4 }}>{item.label}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: '#7a9a92' }}>{item.sub}</div>
-                      <span style={{ background: tag.bg, color: tag.color, fontFamily: "'DM Sans', sans-serif", fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20 }}>{item.category}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map((item) => (
+              <GalleryCard key={item.id} item={item} onClick={() => openLightbox(item)} />
+            ))}
           </div>
         </div>
       </section>
@@ -120,16 +167,22 @@ export default function Gallery() {
         const current = lightbox.items[lightbox.idx];
         const tag = tagColor[current.category];
         return (
-          <div onClick={() => setLightbox(null)} style={{
-            position: 'fixed', inset: 0, background: 'rgba(6,14,12,0.92)', zIndex: 1000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
-            backdropFilter: 'blur(8px)',
-          }}>
-            <div onClick={e => e.stopPropagation()} style={{
-              background: '#fff', borderRadius: 14, overflow: 'hidden',
-              maxWidth: 820, width: '100%', boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
-              display: 'flex', flexDirection: 'column',
-            }}>
+          <div
+            onClick={() => setLightbox(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(6,14,12,0.92)', zIndex: 1000,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#fff', borderRadius: 14, overflow: 'hidden',
+                maxWidth: 820, width: '100%', boxShadow: '0 40px 100px rgba(0,0,0,0.5)',
+                display: 'flex', flexDirection: 'column',
+              }}
+            >
               {/* Image */}
               <div style={{ position: 'relative', background: '#111', maxHeight: '70vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img
@@ -138,22 +191,28 @@ export default function Gallery() {
                   style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', display: 'block' }}
                 />
                 {/* Prev */}
-                <button onClick={() => setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.items.length) % l.items.length }))} style={{
-                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', cursor: 'pointer',
-                  borderRadius: '50%', width: 40, height: 40, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  backdropFilter: 'blur(4px)', transition: 'background 0.2s',
-                }}
+                <button
+                  onClick={() => setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.items.length) % l.items.length }))}
+                  style={{
+                    position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', cursor: 'pointer',
+                    borderRadius: '50%', width: 40, height: 40, fontSize: 20,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(4px)', transition: 'background 0.2s',
+                  }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
                 >‹</button>
                 {/* Next */}
-                <button onClick={() => setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.items.length }))} style={{
-                  position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', cursor: 'pointer',
-                  borderRadius: '50%', width: 40, height: 40, fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  backdropFilter: 'blur(4px)', transition: 'background 0.2s',
-                }}
+                <button
+                  onClick={() => setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.items.length }))}
+                  style={{
+                    position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
+                    background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', cursor: 'pointer',
+                    borderRadius: '50%', width: 40, height: 40, fontSize: 20,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(4px)', transition: 'background 0.2s',
+                  }}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
                 >›</button>
@@ -162,6 +221,7 @@ export default function Gallery() {
                   {lightbox.idx + 1} / {lightbox.items.length}
                 </div>
               </div>
+
               {/* Caption */}
               <div style={{ padding: '18px 24px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -171,15 +231,28 @@ export default function Gallery() {
                     <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#7a9a92' }}>{current.sub}</span>
                   </div>
                 </div>
-                <button onClick={() => setLightbox(null)} style={{
-                  background: '#1a2e28', color: '#fff', border: 'none', cursor: 'pointer',
-                  padding: '9px 18px', borderRadius: 7, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500,
-                }}>Close ✕</button>
+                <button
+                  onClick={() => setLightbox(null)}
+                  style={{
+                    background: '#1a2e28', color: '#fff', border: 'none', cursor: 'pointer',
+                    padding: '9px 18px', borderRadius: 7, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 500,
+                  }}
+                >Close ✕</button>
               </div>
             </div>
           </div>
         );
       })()}
+
+      <style>{`
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position:  200% 0; }
+        }
+        @media (max-width: 600px) {
+          .gallery-section { padding: 20px 16px 60px !important; }
+        }
+      `}</style>
     </div>
   );
 }

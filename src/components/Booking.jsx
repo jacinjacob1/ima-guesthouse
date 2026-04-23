@@ -5,6 +5,59 @@ const roomImages = {
   'Executive Room': ['/gallery/executive/executive-1.jpg', '/gallery/executive/executive-2.jpg', '/gallery/executive/executive-3.jpg'],
 };
 
+// ── Helpers defined OUTSIDE Booking so their identity is stable across re-renders ──
+
+const inputStyle = (error) => ({
+  width: '100%', boxSizing: 'border-box', padding: '12px 14px',
+  fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: '#1a2e28',
+  background: '#fff', border: `1.5px solid ${error ? '#c0392b' : 'rgba(45,106,92,0.25)'}`,
+  borderRadius: 7, outline: 'none', transition: 'border-color 0.2s ease',
+});
+
+function Field({ label, id, type = 'text', value, onChange, error, placeholder, required, clearErr, children }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <label style={{ display: 'block', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#2a3a35', marginBottom: 7, letterSpacing: '0.04em' }}>
+        {label}{required && <span style={{ color: '#c0392b', marginLeft: 3 }}>*</span>}
+      </label>
+      {children || (
+        <input
+          type={type}
+          value={value}
+          onChange={e => { onChange(e.target.value); clearErr(id); }}
+          placeholder={placeholder}
+          style={inputStyle(error)}
+          onFocus={e => { if (!error) e.target.style.borderColor = '#2d6a5c'; }}
+          onBlur={e => { if (!error) e.target.style.borderColor = 'rgba(45,106,92,0.25)'; }}
+        />
+      )}
+      {error && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{error}</div>}
+    </div>
+  );
+}
+
+function SelectField({ label, id, value, onChange, error, options, placeholder, required, clearErr }) {
+  return (
+    <Field label={label} id={id} error={error} required={required} clearErr={clearErr}>
+      <select
+        value={value}
+        onChange={e => { onChange(e.target.value); clearErr(id); }}
+        style={{
+          ...inputStyle(error),
+          color: value ? '#1a2e28' : '#9ab0a8',
+          appearance: 'none', cursor: 'pointer',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232d6a5c' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center',
+        }}
+      >
+        <option value="">{placeholder}</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      {error && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{error}</div>}
+    </Field>
+  );
+}
+
 function RoomPreviewCard({ roomType, onSelect, selected }) {
   const [imgIdx, setImgIdx] = useState(0);
   const imgs = roomImages[roomType] || [];
@@ -16,11 +69,9 @@ function RoomPreviewCard({ roomType, onSelect, selected }) {
       boxShadow: selected ? '0 4px 20px rgba(45,106,92,0.18)' : '0 1px 8px rgba(45,106,92,0.06)',
       background: '#fff', transition: 'all 0.2s ease', position: 'relative',
     }}>
-      {/* Selected tick */}
       {selected && (
         <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, width: 24, height: 24, borderRadius: '50%', background: '#2d6a5c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700 }}>✓</div>
       )}
-      {/* Image carousel */}
       <div style={{ position: 'relative', height: 160, overflow: 'hidden', background: '#e8f0ed' }}>
         {imgs.length > 0 && (
           <img src={imgs[imgIdx]} alt={roomType} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -60,9 +111,9 @@ function RoomPreviewCard({ roomType, onSelect, selected }) {
 }
 
 export default function Booking() {
-  const [visible, setVisible]           = useState(false);
-  const [step, setStep]                 = useState(1);
-  const [submitted, setSubmitted]       = useState(false);
+  const [visible, setVisible]             = useState(false);
+  const [step, setStep]                   = useState(1);
+  const [submitted, setSubmitted]         = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [form, setForm] = useState({
     roomType: '', checkIn: '', checkOut: '', guests: '1',
@@ -76,10 +127,10 @@ export default function Booking() {
   useEffect(() => { setTimeout(() => setVisible(true), 80); }, []);
 
   const totalSteps = 5;
-  const rooms    = ['Deluxe Room', 'Executive Room'];
-  const idTypes  = ['Aadhaar Card', 'PAN Card', 'Driving License', 'Voter ID', 'Passport'];
+  const rooms   = ['Deluxe Room', 'Executive Room'];
+  const idTypes = ['Aadhaar Card', 'PAN Card', 'Driving License', 'Voter ID', 'Passport'];
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+  const set      = (key, val) => setForm(f => ({ ...f, [key]: val }));
   const clearErr = (key) => setErrors(e => { const n = { ...e }; delete n[key]; return n; });
 
   const validate = (s) => {
@@ -113,43 +164,6 @@ export default function Booking() {
     setErrors({});
     if (step < totalSteps) setStep(s => s + 1);
   };
-
-  const inputStyle = (error) => ({
-    width: '100%', boxSizing: 'border-box', padding: '12px 14px',
-    fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: '#1a2e28',
-    background: '#fff', border: `1.5px solid ${error ? '#c0392b' : 'rgba(45,106,92,0.25)'}`,
-    borderRadius: 7, outline: 'none', transition: 'border-color 0.2s ease',
-  });
-
-  const Field = ({ label, id, type = 'text', value, onChange, error, placeholder, required, children }) => (
-    <div style={{ marginBottom: 22 }}>
-      <label style={{ display: 'block', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#2a3a35', marginBottom: 7, letterSpacing: '0.04em' }}>
-        {label}{required && <span style={{ color: '#c0392b', marginLeft: 3 }}>*</span>}
-      </label>
-      {children || (
-        <input type={type} value={value} onChange={e => { onChange(e.target.value); clearErr(id); }}
-          placeholder={placeholder} style={inputStyle(error)}
-          onFocus={e => { if (!error) e.target.style.borderColor = '#2d6a5c'; }}
-          onBlur={e => { if (!error) e.target.style.borderColor = 'rgba(45,106,92,0.25)'; }}
-        />
-      )}
-      {error && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{error}</div>}
-    </div>
-  );
-
-  const SelectField = ({ label, id, value, onChange, error, options, placeholder, required }) => (
-    <Field label={label} id={id} error={error} required={required}>
-      <select value={value} onChange={e => { onChange(e.target.value); clearErr(id); }}
-        style={{ ...inputStyle(error), color: value ? '#1a2e28' : '#9ab0a8', appearance: 'none', cursor: 'pointer',
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%232d6a5c' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center',
-        }}>
-        <option value="">{placeholder}</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-      {error && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{error}</div>}
-    </Field>
-  );
 
   const stepLabels = ['Room', 'Personal', 'Identity', 'Review', 'Payment'];
   const today = new Date().toISOString().split('T')[0];
@@ -210,7 +224,6 @@ export default function Booking() {
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#1a2e28', margin: '0 0 6px' }}>Select Room & Dates</h2>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#6a8a82', marginBottom: 24, lineHeight: 1.6 }}>Choose your room type and preferred dates.</p>
 
-                    {/* Room preview cards */}
                     <div style={{ marginBottom: 6 }}>
                       <label style={{ display: 'block', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#2a3a35', marginBottom: 12, letterSpacing: '0.04em' }}>
                         Room Type <span style={{ color: '#c0392b' }}>*</span>
@@ -235,7 +248,7 @@ export default function Booking() {
                         {errors.checkOut && <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: '#c0392b', marginTop: 5 }}>{errors.checkOut}</div>}
                       </div>
                     </div>
-                    <SelectField label="Number of Guests" id="guests" value={form.guests} onChange={v => set('guests', v)} options={['1', '2']} placeholder="" />
+                    <SelectField label="Number of Guests" id="guests" value={form.guests} onChange={v => set('guests', v)} options={['1', '2']} placeholder="" clearErr={clearErr} />
                   </div>
                 )}
 
@@ -243,9 +256,9 @@ export default function Booking() {
                 {step === 2 && (
                   <div>
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#1a2e28', margin: '0 0 28px' }}>Personal Details</h2>
-                    <Field label="Full Name" id="name" value={form.name} onChange={v => set('name', v)} error={errors.name} placeholder="Dr. / Mr. / Ms. Your Full Name" required />
-                    <Field label="Mobile Number" id="phone" type="tel" value={form.phone} onChange={v => set('phone', v)} error={errors.phone} placeholder="10-digit Indian mobile number" required />
-                    <Field label="Email Address" id="email" type="email" value={form.email} onChange={v => set('email', v)} error={errors.email} placeholder="your@email.com (optional)" />
+                    <Field label="Full Name" id="name" value={form.name} onChange={v => set('name', v)} error={errors.name} placeholder="Dr. / Mr. / Ms. Your Full Name" required clearErr={clearErr} />
+                    <Field label="Mobile Number" id="phone" type="tel" value={form.phone} onChange={v => set('phone', v)} error={errors.phone} placeholder="10-digit Indian mobile number" required clearErr={clearErr} />
+                    <Field label="Email Address" id="email" type="email" value={form.email} onChange={v => set('email', v)} error={errors.email} placeholder="your@email.com (optional)" clearErr={clearErr} />
                     <div style={{ marginBottom: 22 }}>
                       <label style={{ display: 'block', fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: '#2a3a35', marginBottom: 7 }}>Special Requests</label>
                       <textarea value={form.notes} onChange={e => set('notes', e.target.value)} placeholder="Any specific requirements..." rows={3}
@@ -259,12 +272,12 @@ export default function Booking() {
                   <div>
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#1a2e28', margin: '0 0 8px' }}>Identity Verification</h2>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#6a8a82', marginBottom: 28, lineHeight: 1.6 }}>A valid government-issued photo ID is required to complete your booking.</p>
-                    <SelectField label="ID Type" id="idType" value={form.idType} onChange={v => set('idType', v)} error={errors.idType} options={idTypes} placeholder="Select ID type" required />
+                    <SelectField label="ID Type" id="idType" value={form.idType} onChange={v => set('idType', v)} error={errors.idType} options={idTypes} placeholder="Select ID type" required clearErr={clearErr} />
                     <Field label="ID Number" id="idNumber" value={form.idNumber} onChange={v => set('idNumber', v)} error={errors.idNumber} placeholder={
                       form.idType === 'Aadhaar Card' ? 'XXXX XXXX XXXX' :
                       form.idType === 'PAN Card' ? 'ABCDE1234F' :
                       form.idType === 'Driving License' ? 'TN-XX-XXXX-XXXXXXX' : 'Enter ID number'
-                    } required />
+                    } required clearErr={clearErr} />
                     <div style={{ background: '#f4f9f7', border: '1px solid rgba(45,106,92,0.15)', borderRadius: 8, padding: '14px 18px' }}>
                       <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: '#3a6a5c', lineHeight: 1.6 }}>
                         🔒 Your ID details are encrypted and used solely for guest registration as required by government norms.
@@ -279,7 +292,6 @@ export default function Booking() {
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#1a2e28', margin: '0 0 6px' }}>Review & Confirm</h2>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#6a8a82', marginBottom: 24, lineHeight: 1.6 }}>Please review your booking details before proceeding to payment.</p>
 
-                    {/* Room thumbnail */}
                     {form.roomType && roomImages[form.roomType] && (
                       <div style={{ borderRadius: 10, overflow: 'hidden', marginBottom: 24, border: '1px solid rgba(45,106,92,0.1)' }}>
                         <img src={roomImages[form.roomType][0]} alt={form.roomType} style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
@@ -318,7 +330,6 @@ export default function Booking() {
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: '#1a2e28', margin: '0 0 6px' }}>Payment</h2>
                     <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: '#6a8a82', marginBottom: 24, lineHeight: 1.6 }}>Choose how you'd like to pay for your stay.</p>
 
-                    {/* Payment options */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 8 }}>
                       {/* Pay at Reception */}
                       <div onClick={() => { setPaymentMethod('reception'); clearErr('paymentMethod'); set('transactionId', ''); clearErr('transactionId'); }} style={payOptBase(paymentMethod === 'reception')}
@@ -373,7 +384,6 @@ export default function Booking() {
                           After payment, enter your <strong>Transaction ID</strong> below.
                         </div>
 
-                        {/* ── Transaction ID (mandatory for UPI) ── */}
                         <div style={{ background: '#fff', borderRadius: 10, padding: '18px 18px 14px', border: `1.5px solid ${errors.transactionId ? '#c0392b' : 'rgba(45,106,92,0.25)'}` }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, color: '#2a3a35', marginBottom: 10, letterSpacing: '0.04em' }}>
                             <span style={{ fontSize: 16 }}>🔖</span>
@@ -461,7 +471,6 @@ export default function Booking() {
                 Thank you, <strong>{form.name}</strong>. Your reservation request for <strong>{form.roomType}</strong> has been received. Our team will reach you on <strong>{form.phone}</strong> to confirm.
               </p>
 
-              {/* Payment summary */}
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, background: '#f4f9f7', border: '1px solid rgba(45,106,92,0.18)', borderRadius: 10, padding: '14px 22px', marginBottom: 8 }}>
                 <span style={{ fontSize: 20 }}>{paymentMethod === 'upi' ? '📱' : '🏨'}</span>
                 <div style={{ textAlign: 'left' }}>
